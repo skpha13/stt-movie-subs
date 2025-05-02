@@ -13,6 +13,13 @@ git clone https://github.com/skpha13/stt-movie-subs.git
 # enter the directory 
 cd stt-movie-subs
 
+# install ffmpeg on linux
+sudo apt update
+sudo apt install ffmpeg
+
+# install ffmpeg on windows
+./scripts/ffmpeg_install.ps1
+
 # install all required dependencies
 pip install -e .
 ```
