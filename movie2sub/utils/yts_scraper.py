@@ -15,16 +15,51 @@ logger = logging.getLogger(__name__)
 
 
 class YTSWebScraper:
+    """A scraper for downloading torrent files from YTS for movies directed by a specific director.
+
+    Attributes
+    ----------
+    DIRECTOR_NAME : str
+        Target director's name used to filter movies (default: "quentin tarantino").
+    OUTPUT_DIR_PATH : str
+        Path where downloaded torrent files will be saved.
+
+    Parameters
+    ----------
+    base_url : str
+        The base URL of the YTS website (e.g., "https://yts.mx/browse-movies").
+    delay_range : tuple of float, optional
+        A tuple representing the minimum and maximum delay (in seconds) between requests (default is (1.0, 3.0)).
+    """
+
     DIRECTOR_NAME: str = "quentin tarantino"
     OUTPUT_DIR_PATH: str = Config.get("TORRENT_DIR_PATH")
 
     def __init__(self, base_url: str, delay_range: Tuple[float, float] = (1.0, 3.0)):
+        """Initialize the YTSWebScraper with base URL and request delay range.
+
+        Parameters
+        ----------
+        base_url : str
+            Base URL of the YTS movies browsing page.
+        delay_range : tuple of float, optional
+            Tuple specifying min and max delay (in seconds) between HTTP requests.
+        """
+
         self.base_url = base_url
         self.ua = UserAgent()
         self.headers: Dict[str, str] = self._get_random_headers()
         self.delay_range = delay_range
 
     def _get_random_headers(self) -> Dict[str, str]:
+        """Generate randomized HTTP headers for request obfuscation.
+
+        Returns
+        -------
+        dict
+            Dictionary of HTTP headers.
+        """
+
         return {
             "User-Agent": self.ua.random,
             "Accept-Language": "en-US,en;q=0.9",
@@ -34,6 +69,21 @@ class YTSWebScraper:
         }
 
     def _get_page_source(self, url: str, params=None) -> BeautifulSoup:
+        """Fetch and parse the HTML content of a page.
+
+        Parameters
+        ----------
+        url : str
+            The URL of the page to fetch.
+        params : dict, optional
+            Dictionary of URL parameters to append to the request.
+
+        Returns
+        -------
+        BeautifulSoup
+            Parsed HTML content of the page.
+        """
+
         time.sleep(random.uniform(*self.delay_range))
         try:
             response = requests.get(url, headers=self.headers, params=params, timeout=10)
@@ -46,6 +96,14 @@ class YTSWebScraper:
             return BeautifulSoup("", "html.parser")
 
     def _download_torrents(self, movie_links: list):
+        """Download torrent files for a list of movie detail page URLs.
+
+        Parameters
+        ----------
+        movie_links : list of str
+            List of URLs pointing to individual movie pages.
+        """
+
         for url in movie_links:
             logger.info(f"\tProcessing URL: {url}")
             soup = self._get_page_source(url)
@@ -85,6 +143,19 @@ class YTSWebScraper:
 
     @staticmethod
     def _get_movie_links_from_page(soup: BeautifulSoup):
+        """Extract movie detail page links from a browse page.
+
+        Parameters
+        ----------
+        soup : BeautifulSoup
+            Parsed HTML of a browse page.
+
+        Returns
+        -------
+        list of str
+            List of movie detail URLs.
+        """
+
         movie_cards = soup.select("div.browse-movie-wrap")
         links = []
 
@@ -97,6 +168,8 @@ class YTSWebScraper:
         return links
 
     def scrape_pages(self):
+        """Scrape all paginated browse pages and download torrents for movies directed by the specified director."""
+
         page_index = 1
         url = self.base_url
 
