@@ -116,9 +116,9 @@ class YTSWebScraper:
             movie_title = sanitize_filename(movie_info.find("h1").text.strip())
 
             director_tag = soup.select_one('span[itemprop="director"] span[itemprop="name"]')
-            director_name = director_tag.text.strip() if director_tag else None
+            director_name = director_tag.text.strip() if director_tag else ""
 
-            if director_name is not None and director_name.lower() != YTSWebScraper.DIRECTOR_NAME:
+            if director_name.lower() != YTSWebScraper.DIRECTOR_NAME:
                 logger.info(
                     f"Skipping movie directed by '{director_name}', does not match target director '{YTSWebScraper.DIRECTOR_NAME}'."
                 )
