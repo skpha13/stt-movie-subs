@@ -14,7 +14,7 @@ def main():
     setup_logging()
     check_ffmpeg()
 
-    load_dotenv(dotenv_path="../../.env.public")
+    load_dotenv(dotenv_path="../../.env")
     Config.update_config()
 
     extract_subtitles(
