@@ -25,6 +25,8 @@ def main():
     qb.client_log_in()
     logger.info("Connected...")
 
+    os.makedirs(Config.get("DOWNLOAD_DIR_PATH"), exist_ok=True)
+
     logger.info("Adding torrents...")
     qb.add_torrent(
         os.path.join(

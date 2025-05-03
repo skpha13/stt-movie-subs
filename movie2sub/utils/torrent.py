@@ -4,7 +4,7 @@ from dataclasses import asdict, dataclass
 from typing import List
 
 import qbittorrentapi
-from qbittorrentapi.torrents import TorrentInfoList, TorrentStatusesT
+from qbittorrentapi.torrents import TorrentStatusesT
 
 logger = logging.getLogger(__name__)
 
@@ -22,14 +22,8 @@ class QBittorrent:
 
     Parameters
     ----------
-    host : str
-        The hostname or IP address of the qBittorrent Web UI server.
-    port : int
-        The port on which the Web UI is accessible (default is usually 8080).
-    username : str
-        Username for qBittorrent Web UI login.
-    password : str
-        Password for qBittorrent Web UI login.
+    conn_info: QBittorrentConnectionInfo
+        The connection info (host, port, username, password).
 
     Attributes
     ----------

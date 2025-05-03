@@ -19,6 +19,8 @@ classifiers = [
 dependencies = [
     'python-dotenv~=1.1',
     'qbittorrent-api~=2025.5',
+    'beautifulsoup4~=4.13',
+    'fake-useragent~=2.2',
 ]
 
 [project.optional-dependencies]
