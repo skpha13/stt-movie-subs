@@ -84,7 +84,12 @@ def extract_subtitles(file: str | Path, output_dir_name: str = "subs") -> None:
         logger.info("No subtitle streams found.")
         return
 
-    english_streams = [s for s in streams if s.get("tags", {}).get("language", "").lower() in ["eng", "en"]]
+    english_streams = [
+        s
+        for s in streams
+        if s.get("tags", {}).get("language", "").lower() in ["eng", "en"]
+        and "forced" not in s.get("tags", {}).get("title", "").lower()
+    ]
 
     if not english_streams:
         logger.info("Subtitle streams found, but none in English.")
@@ -95,9 +100,6 @@ def extract_subtitles(file: str | Path, output_dir_name: str = "subs") -> None:
 
         if "sdh" in title:
             return 1
-
-        if "forced" in title:
-            return 0
 
         return 2
 
@@ -116,3 +118,61 @@ def extract_subtitles(file: str | Path, output_dir_name: str = "subs") -> None:
         logger.error(f"Failed to extract subtitle {index}: {result.stderr.strip()}")
     else:
         logger.info(f"Successfully extracted subtitle: {output_path}")
+
+
+def extract_audio(file: str | Path, output_dir_name: str, extension: str = ".wav") -> None:
+    """Extracts the first audio stream from a video file using FFmpeg and saves it to a specified format.
+
+    Parameters
+    ----------
+    file : str or Path
+        Path to the input video file containing audio tracks.
+
+    output_dir_name : str
+        Directory where the extracted audio file will be saved. Will be created if it does not exist.
+
+    extension : str, optional
+        File extension for the output audio file (e.g., '.mka', '.aac', '.mp3', '.wav').
+        - If using `.mka` or `.aac`, the audio is extracted without re-encoding (codec copy).
+        - For `.wav`, the audio is re-encoded to PCM (`pcm_s16le`) as required by the format.
+        - For `.mp3`, audio is re-encoded using `libmp3lame`.
+
+    Returns
+    -------
+    None
+        The function saves the extracted audio stream to a file named after the input video.
+    """
+    os.makedirs(output_dir_name, exist_ok=True)
+
+    base_name = Path(file).stem
+    output_path = Path(output_dir_name) / f"{base_name}{extension}"
+    logger.info(f"Extracting audio from: {file}")
+
+    ext = extension.lower()
+    if ext in [".mka", ".aac"]:
+        codec = "copy"
+    elif ext == ".wav":
+        codec = "pcm_s16le"
+    elif ext == ".mp3":
+        codec = "libmp3lame"
+    else:
+        logger.warning(f"Unknown or unsupported extension '{extension}', defaulting to codec copy.")
+        codec = "copy"
+
+    cmd = [
+        "ffmpeg",
+        "-y",
+        "-i",
+        str(file),
+        "-map",
+        "0:a:0",
+        "-c:a",
+        codec,
+        str(output_path),
+    ]
+
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    if result.returncode != 0:
+        logger.error(f"Failed to extract audio: {result.stderr.strip()}")
+    else:
+        logger.info(f"Audio successfully saved to: {output_path}")

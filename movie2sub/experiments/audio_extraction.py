@@ -2,23 +2,20 @@ import logging
 
 from dotenv import load_dotenv
 from movie2sub.config import Config
-from movie2sub.utils.ffmpeg import check_ffmpeg, extract_subtitles
+from movie2sub.utils.ffmpeg import check_ffmpeg, extract_audio
 
-
-def setup_logging():
-    logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO)
 
 
 def main():
-    setup_logging()
     check_ffmpeg()
 
     load_dotenv(dotenv_path="../../.env")
     Config.update_config()
 
-    extract_subtitles(
+    extract_audio(
         Config.get("SAMPLE_MKV_FILE"),
-        Config.get("SUBTITLE_DIR_PATH"),
+        Config.get("AUDIO_DIR_PATH"),
     )
 
 

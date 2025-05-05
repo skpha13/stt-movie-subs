@@ -22,6 +22,7 @@ Some paths are pre-configured with default values:
 SUBTITLE_DIR_PATH="data\\subs"
 TORRENT_DIR_PATH="data\\torrents"
 DOWNLOAD_DIR_PATH="data\\downloads"
+AUDIO_DIR_PATH="data\\audio"
 ```
 > We recommend to not change these.
 
