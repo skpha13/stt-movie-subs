@@ -16,10 +16,40 @@ logger = logging.getLogger(__name__)
 
 
 def time_to_seconds(t: time) -> float:
+    """Convert a `time` object to the total number of seconds, including fractional seconds.
+
+    Parameters
+    ----------
+    t : time
+        A `time` object representing a specific time.
+
+    Returns
+    -------
+    float
+        The total number of seconds represented by the `time` object, including fractional seconds
+        (microseconds).
+    """
     return t.hour * 3600 + t.minute * 60 + t.second + t.microsecond / 1e6
 
 
 def segment_subtitles(subtitle_file: str | Path, max_segment_length: int = 30) -> List[Segment]:
+    """Segments subtitles into chunks where the duration of each segment does not exceed the specified
+    maximum segment length.
+
+    Parameters
+    ----------
+    subtitle_file : str or Path
+        The path to the subtitle file to be processed.
+
+    max_segment_length : int, optional
+        The maximum allowed segment length in seconds. The default is 30 seconds.
+
+    Returns
+    -------
+    List[Segment]
+        A list of `Segment` objects representing the subtitle segments.
+    """
+
     logger.info(f"Processing subtitle file: {subtitle_file}")
     subs = pysrt.open(subtitle_file)
 
@@ -56,6 +86,30 @@ def segment_subtitles(subtitle_file: str | Path, max_segment_length: int = 30) -
 
 
 def export_segments(audio_file: str | Path, segments: List[Segment], output_dir: str | Path) -> None:
+    """Exports the segments as audio and corresponding subtitle files.
+
+    Parameters
+    ----------
+    audio_file : str or Path
+        The path to the audio file that will be segmented.
+
+    segments : List[Segment]
+        A list of `Segment` objects representing the segments to be exported.
+
+    output_dir : str or Path
+        The directory where the exported audio and subtitle files will be saved.
+
+    Returns
+    -------
+    None
+        This function does not return any value. It writes audio and subtitle files to the specified
+        output directory.
+
+    Notes
+    -----
+    Audio is exported as `.wav` files, and subtitles are exported as plain text files for each segment.
+    """
+
     os.makedirs(output_dir, exist_ok=True)
     logger.info(f"Segmenting audio file: {audio_file}")
 
@@ -85,6 +139,8 @@ def export_segments(audio_file: str | Path, segments: List[Segment], output_dir:
     logger.info("Segmenting successful")
 
 
+# TODO: segment lengths are <= max_segment_length -> padding will be necessary to reach exactly max_segment_length
+# TODO: think of removing background noise
 if __name__ == "__main__":
     load_dotenv()
     Config.update_config()

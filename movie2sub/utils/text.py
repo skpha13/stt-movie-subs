@@ -1,11 +1,30 @@
 import re
 import string
-from datetime import time
-
-from movie2sub.utils.custom_types import Segment
 
 
-def clean_asr_text(text: str):
+def clean_asr_text(text: str) -> str:
+    """Cleans a given ASR (Automatic Speech Recognition) text by performing the following operations:
+    - Removing HTML tags.
+    - Replacing leading hyphens.
+    - Normalizing whitespace to a single space.
+    - Converting the text to lowercase.
+    - Splitting the text into sentences based on punctuation (periods, exclamation marks, question marks).
+    - Removing all punctuation except for apostrophes.
+
+    Parameters
+    ----------
+    text : str
+        The input text to be cleaned. It is expected to be a string containing ASR text that may need
+        cleaning for further processing or analysis.
+
+    Returns
+    -------
+    str
+        The cleaned version of the input text, with HTML tags removed, hyphens replaced,
+        normalized whitespace, and punctuation (except apostrophes) removed. Sentences are split
+        by punctuation marks.
+    """
+
     # remove html files
     text = re.sub(r"<[^>]+>", "", text)
 
