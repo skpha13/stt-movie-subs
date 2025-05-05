@@ -34,6 +34,9 @@ class YTSWebScraper:
 
     DIRECTOR_NAME: str = "quentin tarantino"
     OUTPUT_DIR_PATH: str = Config.get("TORRENT_DIR_PATH")
+    TORRENT_BLACK_LIST: set = {
+        "https://yts.mx/movies/kill-bill-the-whole-bloody-affair-2006",
+    }
 
     def __init__(self, base_url: str, delay_range: Tuple[float, float] = (1.0, 3.0)):
         """Initialize the YTSWebScraper with base URL and request delay range.
@@ -106,6 +109,11 @@ class YTSWebScraper:
 
         for url in movie_links:
             logger.info(f"\tProcessing URL: {url}")
+
+            if url in YTSWebScraper.TORRENT_BLACK_LIST:
+                logger.info(f"URL: {url} skipped (blacklist)")
+                continue
+
             soup = self._get_page_source(url)
 
             # request failed for the current link, skip to next
