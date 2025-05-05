@@ -21,6 +21,11 @@ dependencies = [
     'qbittorrent-api~=2025.5',
     'beautifulsoup4~=4.13',
     'fake-useragent~=2.2',
+    'pysrt~=1.1',
+    'numpy~=2.2',
+    'scipy~=1.15',
+    'soundfile~=0.13',
+    'tqdm~=4.67',
 ]
 
 [project.optional-dependencies]
