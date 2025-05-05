@@ -139,17 +139,18 @@ def export_segments(audio_file: str | Path, segments: List[Segment], output_dir:
     logger.info("Segmenting successful")
 
 
-# TODO: segment lengths are <= max_segment_length -> padding will be necessary to reach exactly max_segment_length
-# TODO: think of removing background noise
 if __name__ == "__main__":
     load_dotenv()
     Config.update_config()
 
     logging.basicConfig(level=logging.INFO)
 
+    # need to have subtitles extracted for the selected audio first
     segments = segment_subtitles(os.path.join(Config.get("SUBTITLE_DIR_PATH"), "subtitle_eng_3.srt"))
     export_segments(
-        os.path.join(Config.get("AUDIO_DIR_PATH"), "Dazed.and.Confused.1993.1080p.BluRay.DTS.x264-VietHD.wav"),
+        os.path.join(
+            Config.get("SAMPLE_WAV_FILE"),
+        ),
         segments,
         "../../data/segmented_audio",
     )

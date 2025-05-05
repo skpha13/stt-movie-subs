@@ -2,7 +2,7 @@ import logging
 
 from dotenv import load_dotenv
 from movie2sub.config import Config
-from movie2sub.utils.ffmpeg import check_ffmpeg, extract_subtitles
+from movie2sub.utils.ffmpeg_functions import check_ffmpeg, extract_subtitles
 
 
 def setup_logging():
