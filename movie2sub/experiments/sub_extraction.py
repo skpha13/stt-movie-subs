@@ -19,7 +19,7 @@ def main():
 
     extract_subtitles(
         Config.get("SAMPLE_MKV_FILE"),
-        os.path.join(Config.get("SUBTITLE_DIR_PATH"), "fallout_s01_e01"),
+        os.path.join(Config.get("SUBTITLE_DIR_PATH"), "subs_sample"),
     )
 
 

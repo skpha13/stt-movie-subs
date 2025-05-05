@@ -63,7 +63,7 @@ def extract_subtitles(file: str | Path, output_dir_name: str = "subs") -> None:
         "-select_streams",
         "s",
         "-show_entries",
-        "stream=index:stream_tags=language",
+        "stream=index:stream_tags=language,title",
         "-of",
         "json",
         file,
@@ -90,16 +90,29 @@ def extract_subtitles(file: str | Path, output_dir_name: str = "subs") -> None:
         logger.info("Subtitle streams found, but none in English.")
         return
 
-    for stream in english_streams:
-        index = stream["index"]
-        lang = stream.get("tags", {}).get("language", f"und_{index}")
-        output_path = os.path.join(output_dir_name, f"subtitle_{lang}_{index}.srt")
+    def subtitle_score(subtitle):
+        title = subtitle.get("tags", {}).get("title", "").lower()
 
-        cmd = ["ffmpeg", "-y", "-i", file, "-map", f"0:{index}", output_path]
-        logger.info(f"Extracting subtitle stream {index} (language: {lang}) to {output_path}")
+        if "sdh" in title:
+            return 1
 
-        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        if result.returncode != 0:
-            logger.error(f"Failed to extract subtitle {index}: {result.stderr.strip()}")
-        else:
-            logger.info(f"Successfully extracted subtitle: {output_path}")
+        if "forced" in title:
+            return 0
+
+        return 2
+
+    best_stream = max(english_streams, key=subtitle_score)
+    index = best_stream["index"]
+    lang = best_stream.get("tags", {}).get("language", f"und_{index}")
+    title = best_stream.get("tags", {}).get("title", "unknown")
+    output_path = os.path.join(output_dir_name, f"subtitle_{lang}_{index}.srt")
+
+    logger.info(f"Extracting subtitle stream {index} (language: {lang}, title: {title}) to {output_path}")
+
+    cmd = ["ffmpeg", "-y", "-i", file, "-map", f"0:{index}", output_path]
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+    if result.returncode != 0:
+        logger.error(f"Failed to extract subtitle {index}: {result.stderr.strip()}")
+    else:
+        logger.info(f"Successfully extracted subtitle: {output_path}")
