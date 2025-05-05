@@ -174,4 +174,8 @@ cython_debug/
 .pypirc
 
 # Custom
-data/
+data/audio/
+data/downloads/
+data/segmented_audio/
+data/subs/
+data/torrents/

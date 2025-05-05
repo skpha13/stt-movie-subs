@@ -7,8 +7,10 @@ from spleeter.separator import Separator
 
 
 def spleeter_extraction(input_file: str, output_dir: str) -> None:
-    separator = Separator("spleeter:2stems", multiprocess=False)
-    separator.separate_to_file(input_file, output_dir)
+    separator = Separator("spleeter:5stems", multiprocess=False)
+    separator.separate_to_file(
+        input_file, output_dir, filename_format="spleeter_5stems/{filename}/{instrument}.{codec}"
+    )
 
 
 def demucs_extraction(input_file: str, output_dir: str) -> None:
@@ -19,8 +21,6 @@ def demucs_extraction(input_file: str, output_dir: str) -> None:
             "demucs",
             "-n",
             model,
-            "--two-stems",
-            "vocals",
             "--out",
             output_dir,
             input_file,
@@ -29,12 +29,12 @@ def demucs_extraction(input_file: str, output_dir: str) -> None:
 
 
 def main():
-    os.makedirs("../../data/segmented_audio", exist_ok=True)
-
+    output_dir = "../../data/vocal_extraction"
     input_file = Config.get("SAMPLE_WAV_FILE")
-    output_dir = "../../data/segmented_audio"
 
-    # spleeter_extraction(input_file, output_dir)
+    os.makedirs(output_dir, exist_ok=True)
+
+    spleeter_extraction(input_file, output_dir)
     demucs_extraction(input_file, output_dir)
 
 

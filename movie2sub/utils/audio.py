@@ -147,10 +147,10 @@ if __name__ == "__main__":
 
     # need to have subtitles extracted for the selected audio first
     segments = segment_subtitles(os.path.join(Config.get("SUBTITLE_DIR_PATH"), "subtitle_eng_3.srt"))
+
+    # need to have this audio file that corresponds with the subtitles
     export_segments(
-        os.path.join(
-            Config.get("SAMPLE_WAV_FILE"),
-        ),
+        os.path.join(Config.get("AUDIO_DIR_PATH"), "Dazed.and.Confused.1993.1080p.BluRay.DTS.x264-VietHD.wav"),
         segments,
         "../../data/segmented_audio",
     )
