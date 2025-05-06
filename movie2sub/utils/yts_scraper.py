@@ -34,9 +34,17 @@ class YTSWebScraper:
 
     DIRECTOR_NAME: str = "quentin tarantino"
     OUTPUT_DIR_PATH: str = Config.get("TORRENT_DIR_PATH")
+
+    # fmt: off
     TORRENT_BLACK_LIST: set = {
-        "https://yts.mx/movies/kill-bill-the-whole-bloody-affair-2006",
+        "https://yts.mx/movies/kill-bill-the-whole-bloody-affair-2006", # duplicate
+
+        # slow downloads:
+        "https://yts.mx/movies/the-hateful-eight-2015",
+        "https://yts.mx/movies/four-rooms-1995",
+        "https://yts.mx/movies/death-proof-2007",
     }
+    # fmt: on
 
     def __init__(self, base_url: str, delay_range: Tuple[float, float] = (1.0, 3.0)):
         """Initialize the YTSWebScraper with base URL and request delay range.
@@ -106,6 +114,7 @@ class YTSWebScraper:
         movie_links : list of str
             List of URLs pointing to individual movie pages.
         """
+        os.makedirs(YTSWebScraper.OUTPUT_DIR_PATH, exist_ok=True)
 
         for url in movie_links:
             logger.info(f"\tProcessing URL: {url}")
