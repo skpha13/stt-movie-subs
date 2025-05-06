@@ -88,6 +88,18 @@ There are typically three subtitle types present:
 
 We extract only the normal subtitles for a cleaner transcript.
 
+### Subtitle Text Cleaning
+
+Once subtitles are extracted, we apply a text preprocessing pipeline to standardize the content:
+
+Remove HTML tags
+- Replace leading hyphens (e.g., in dialogue lines)
+- Normalize whitespace (e.g., multiple spaces → single space)
+- Convert text to lowercase
+- Split text into sentences using punctuation (`.`, `!`, `?`)
+- Remove all punctuation except apostrophes
+- Remove non-textual characters (e.g., music notes, symbols)
+
 ## Audio Segmenting
 
 To prepare our data for machine learning, we need to split the full-length movie audio (typically 2–3 hours) into smaller, manageable segments, ideally **30 to 45** seconds of continuous speech paired with their corresponding subtitles.
@@ -145,6 +157,22 @@ In contrast, movie audio is far more complex and varied:
 - No clear separation like that found in musical tracks
 
 As a result, the models couldn't generalize to our use case. The **data distribution** was too different from their training data.
+
+## Filtering
+
+After segmenting, we applied a cleanup process to ensure that only meaningful audio-text pairs remained.
+
+### Text Filtering
+
+- Segments with **fewer than 15** words in the corresponding subtitle file were discarded.
+
+- These usually lacked substantial dialogue and did not provide useful data for training.
+
+### Audio Filtering
+
+- `.wav` files shorter than **10 seconds** were also removed.
+
+- These short clips often came from edge cases, such as the very beginning or end of a movie, and typically contained incomplete or irrelevant audio.
 
 ## Final Data Pipeline Graph
 
