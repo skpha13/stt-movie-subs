@@ -172,3 +172,12 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Custom
+data/audio/
+data/downloads/
+data/segmented_audio/
+data/subs/
+data/torrents/
+data/audio_sub/
+data/dataset/

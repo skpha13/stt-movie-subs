@@ -10,13 +10,23 @@ authors = [
 description = "Movie2Sub is a Python-based package used to generate movie subtitles from an input audio."
 readme = "README.md"
 
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.11"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
 
 dependencies = [
+    'python-dotenv~=1.1',
+    'qbittorrent-api~=2025.5',
+    'beautifulsoup4~=4.13',
+    'fake-useragent~=2.2',
+    'pysrt~=1.1',
+    'numpy<2.0',
+    'scipy~=1.15',
+    'soundfile~=0.13',
+    'tqdm~=4.67',
+    'spleeter~=2.4',
 ]
 
 [project.optional-dependencies]
