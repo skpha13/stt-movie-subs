@@ -1,11 +1,12 @@
 import logging
 import os
+import shutil
 
 from dotenv import load_dotenv
 from movie2sub.config import Config
 from movie2sub.utils.audio import export_segments, segment_subtitles
 from movie2sub.utils.ffmpeg_functions import extract_audio, extract_subtitles
-from movie2sub.utils.files import is_video_file
+from movie2sub.utils.files import is_srt_file, is_video_file
 from movie2sub.utils.torrent import QBittorrent, QBittorrentConnectionInfo
 from movie2sub.utils.yts_scraper import YTSWebScraper
 
@@ -44,30 +45,21 @@ def download_torrents(download_dir_path: str, torrent_dir_path: str):
     logger.info("Download finished.")
 
 
-def audio_extraction(audio_sub_dir_path: str, download_dir_path: str):
-    for filename in os.listdir(download_dir_path):
-        extraction_path = os.path.join(audio_sub_dir_path, filename)
-
-        if not is_video_file(extraction_path):
-            continue
-
+def extract_audio_and_subtitles(audio_sub_dir_path: str, download_dir_path: str):
+    for movie_dir in os.listdir(download_dir_path):
+        movie_dir_path = os.path.join(download_dir_path, movie_dir)
+        extraction_path = os.path.join(audio_sub_dir_path, movie_dir)
         os.makedirs(extraction_path, exist_ok=True)
 
-        movie_path = os.path.join(download_dir_path, filename)
-        extract_audio(movie_path, extraction_path)
+        for filename in os.listdir(movie_dir_path):
+            filepath = os.path.join(movie_dir_path, filename)
 
+            if is_video_file(filepath):
+                extract_audio(filepath, extraction_path)
+                extract_subtitles(filepath, extraction_path)
 
-def sub_extraction(audio_sub_dir_path: str, download_dir_path: str):
-    for filename in os.listdir(download_dir_path):
-        extraction_path = os.path.join(audio_sub_dir_path, filename)
-
-        if not is_video_file(extraction_path):
-            continue
-
-        os.makedirs(extraction_path, exist_ok=True)
-
-        movie_path = os.path.join(download_dir_path, filename)
-        extract_subtitles(movie_path, extraction_path)
+            elif is_srt_file(filepath):
+                shutil.copy(filepath, os.path.join(extraction_path, filename))
 
 
 def audio_segmenting(audio_sub_dir_path: str, dataset_dir_path: str):
@@ -100,8 +92,7 @@ def main():
     scrape_torrents(TORRENT_DIR_PATH)
     download_torrents(DOWNLOAD_DIR_PATH, TORRENT_DIR_PATH)
 
-    audio_extraction(AUDIO_SUB_DIR_PATH, DOWNLOAD_DIR_PATH)
-    sub_extraction(AUDIO_SUB_DIR_PATH, DOWNLOAD_DIR_PATH)
+    extract_audio_and_subtitles(AUDIO_SUB_DIR_PATH, DOWNLOAD_DIR_PATH)
 
     audio_segmenting(AUDIO_SUB_DIR_PATH, DATASET_DIR_PATH)
 

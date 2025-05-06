@@ -10,6 +10,7 @@ def clean_asr_text(text: str) -> str:
     - Converting the text to lowercase.
     - Splitting the text into sentences based on punctuation (periods, exclamation marks, question marks).
     - Removing all punctuation except for apostrophes.
+    - Removing non-letter/number/punctuation characters like music notes.
 
     Parameters
     ----------
@@ -40,13 +41,19 @@ def clean_asr_text(text: str) -> str:
     # split into lines where appropriate (based on punctuation)
     sentences = re.split(r"(?<=[.!?])\s+", text)
 
-    # remove punctuation except apostrophes
+    # remove all punctuation except apostrophes
     allowed_punct = "'"
-    cleaned = "\n".join(
-        re.sub(f"[{re.escape(string.punctuation.replace(allowed_punct, ''))}]", "", s).strip() for s in sentences if s
-    )
+    cleaned_sentences = []
+    for s in sentences:
+        if not s:
+            continue
+        # remove punctuation (except apostrophes)
+        s = re.sub(f"[{re.escape(string.punctuation.replace(allowed_punct, ''))}]", "", s)
+        # remove non-alphanumeric characters except apostrophes and whitespace
+        s = re.sub(rf"[^\w\s{re.escape(allowed_punct)}]", "", s)
+        cleaned_sentences.append(s.strip())
 
-    return cleaned
+    return "\n".join(cleaned_sentences)
 
 
 if __name__ == "__main__":

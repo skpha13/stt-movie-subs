@@ -122,17 +122,35 @@ def export_segments(audio_file: str | Path, segments: List[Segment], output_dir:
 
         start_sec = time_to_seconds(start_time)
         end_sec = time_to_seconds(end_time)
+        duration = end_sec - start_sec
+
+        duration_threshold = 10.0
+        if duration < duration_threshold:
+            logger.info(f"Skipping segment {index:06d}: duration < {duration_threshold} second ({duration:.2f}s)")
+            continue
 
         start_sample = int(start_sec * sample_rate)
         end_sample = int(end_sec * sample_rate)
 
-        # export audio
+        # audio segmentation
         audio_chunk = audio[start_sample:end_sample]
-        sf.write(os.path.join(output_dir, f"segment_{index:06d}.wav"), audio_chunk, sample_rate)
 
         # export subtitles as plain text
         txt_path = os.path.join(output_dir, f"segment_{index:06d}.txt")
         clean_subs = clean_asr_text("\n".join(map(lambda sub: sub.text, subs_chunk)))
+        word_count = len(clean_subs.strip().split())
+        word_count_threshold = 15
+
+        if word_count < word_count_threshold:
+            logger.info(
+                f"Skipping segment {index:06d}: subtitle has less than {word_count_threshold} words ({word_count} words)"
+            )
+            continue
+
+        # export audio
+        sf.write(os.path.join(output_dir, f"segment_{index:06d}.wav"), audio_chunk, sample_rate)
+
+        # export subtitles
         with open(txt_path, "w", encoding="utf-8") as f:
             f.write(clean_subs)
 
