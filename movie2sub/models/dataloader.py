@@ -4,18 +4,23 @@ from typing import List, Tuple
 
 import torchaudio
 from dotenv import load_dotenv
+from matplotlib import pyplot as plt
 from movie2sub.config import Config
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
-from movie2sub.models.preprocessing import AudioProcessor
-
 
 class MovieSubDataset(Dataset):
     def __init__(
-        self, samples: List[Tuple[str, str]], transform=None, target_transform=None, show_progress: bool = True
+        self,
+        samples: List[Tuple[str, str]],
+        transform=None,
+        target_transform=None,
+        resample_rate: int = 16_000,
+        show_progress: bool = True,
     ):
+        self.resample_rate = resample_rate
         self.transform = transform
         self.target_transform = target_transform
         self.data = []
@@ -27,14 +32,24 @@ class MovieSubDataset(Dataset):
             with open(txt_path, "r", encoding="utf-8") as f:
                 subtitle_text = f.read()
 
-            features = AudioProcessor.preprocess(waveform, sample_rate)
+            # convert to mono (if stereo) - downmixing
+            if waveform.size(0) > 1:
+                waveform = waveform.mean(dim=0, keepdim=True)
+
+            # resample to resample_rate
+            if sample_rate != self.resample_rate:
+                resampler = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=self.resample_rate)
+                waveform = resampler(waveform)
+
+            # normalize: scale waveform to [-1, 1] range
+            waveform = waveform / waveform.abs().max()
 
             if self.transform:
-                features = self.transform(features)
+                waveform = self.transform(waveform)
             if self.target_transform:
                 subtitle_text = self.target_transform(subtitle_text)
 
-            self.data.append((features, subtitle_text))
+            self.data.append((waveform, sample_rate, subtitle_text))
 
     def __len__(self):
         return len(self.data)
@@ -98,10 +113,16 @@ def main():
     train_loader, validation_loader, test_loader = load_movie_subs(Config.get("DATASET_DIR_PATH"))
 
     batch = next(iter(train_loader))
-    feature, subtitle = batch[0][0], batch[1][0]
+    waveform, sample_rate, subtitle = batch[0][0], batch[1][0], batch[2][0]
 
     print("Subtitle text:\n", subtitle)
-    print(f"Feature shape: {feature.numpy().shape}")
+
+    plt.figure(figsize=(12, 3))
+    plt.plot(waveform.squeeze().numpy())
+    plt.title("Audio Waveform")
+    plt.xlabel("Sample")
+    plt.ylabel("Amplitude")
+    plt.show()
 
 
 if __name__ == "__main__":

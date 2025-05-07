@@ -4,6 +4,7 @@ from typing import Dict
 
 import matplotlib.pyplot as plt
 import torch
+import torch.nn.functional as F
 import torchaudio
 from dotenv import load_dotenv
 from movie2sub.config import Config
@@ -133,6 +134,8 @@ class AudioProcessor:
 class TextProcessor(ABC):
     """Abstract base class for text processing to generate embeddings."""
 
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     @abstractmethod
     def process(self, text: str) -> torch.Tensor:
         """Process the input text and return its embedding.
@@ -165,7 +168,7 @@ class BertProcessor(TextProcessor):
 
     def __init__(self, tokenizer: str = "bert-base-uncased", model: str = "bert-base-uncased"):
         self.tokenizer = BertTokenizer.from_pretrained(tokenizer)
-        self.model = BertModel.from_pretrained(model)
+        self.model = BertModel.from_pretrained(model).to(BertProcessor.device)
 
     def tokenize_text(self, text: str) -> Dict[str, torch.Tensor]:
         """Tokenize input text using the BERT tokenizer.
@@ -180,7 +183,7 @@ class BertProcessor(TextProcessor):
         Dict[str, torch.Tensor]
             A dictionary containing input IDs, attention masks, and token type IDs.
         """
-        return self.tokenizer(text, return_tensors="pt")
+        return self.tokenizer(text, return_tensors="pt").to(BertProcessor.device)
 
     def embed_tokens(self, tokens: Dict[str, torch.Tensor]) -> torch.Tensor:
         """Generate token embeddings from tokenized input using BERT.
@@ -217,6 +220,41 @@ class BertProcessor(TextProcessor):
         embeddings = self.embed_tokens(tokens)
 
         return embeddings
+
+
+def collate_fn(batch):
+    """Collate function for batching data samples.
+
+    Pads the text embeddings to equal size and stacks the features.
+
+    Parameters
+    ----------
+    batch : list of tuples
+        Each item is a tuple (features, subtitle, embedding), where:
+            - features (Tensor): Feature tensor for a sample.
+            - subtitle (str): Subtitle text.
+            - embedding (Tensor): Text embedding of shape (C, L).
+
+    Returns
+    -------
+    features : Tensor
+        Stacked feature tensors.
+
+    subtitles : list of str
+        Subtitle strings for each sample.
+
+    padded_embeddings : Tensor
+        Embeddings padded to the same length, shape (B, C, max_len).
+    """
+
+    features, subtitles, embeddings = zip(*batch)
+
+    # pad embeddings to max sequence length
+    max_len = max(e.shape[1] for e in embeddings)
+    padded_embeddings = torch.stack([F.pad(e, (0, 0, 0, max_len - e.shape[1])) for e in embeddings])
+
+    features = torch.stack(features)
+    return features, list(subtitles), padded_embeddings
 
 
 if __name__ == "__main__":
