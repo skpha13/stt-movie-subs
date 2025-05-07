@@ -4,7 +4,7 @@ import shutil
 
 from dotenv import load_dotenv
 from movie2sub.config import Config
-from movie2sub.utils.audio import export_segments, segment_subtitles
+from movie2sub.utils.audio import AudioSubSegmenter
 from movie2sub.utils.ffmpeg_functions import extract_audio, extract_subtitles
 from movie2sub.utils.files import is_srt_file, is_video_file
 from movie2sub.utils.torrent import QBittorrent, QBittorrentConnectionInfo
@@ -81,11 +81,13 @@ def audio_segmenting(audio_sub_dir_path: str, dataset_dir_path: str):
 
         output_dir_path = os.path.join(dataset_dir_path, movie_name)
         try:
-            segments = segment_subtitles(sub_file_path)
+            segmenter = AudioSubSegmenter(audio_file_path, sub_file_path, max_segment_length=30)
         except Exception as e:
             logger.info(f"Failed to segment subtitle: {sub_file_path}, Error: {e}")
             continue
-        export_segments(audio_file_path, segments, output_dir_path)
+
+        segments = segmenter.segment_subtitles()
+        segmenter.export_segments(segments, output_dir_path)
 
 
 def main():
