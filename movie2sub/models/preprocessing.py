@@ -1,10 +1,13 @@
 import os
+from abc import ABC, abstractmethod
+from typing import Dict
 
 import matplotlib.pyplot as plt
 import torch
 import torchaudio
 from dotenv import load_dotenv
 from movie2sub.config import Config
+from transformers import BertModel, BertTokenizer
 
 
 class AudioProcessor:
@@ -127,6 +130,95 @@ class AudioProcessor:
         return log_mel_spec
 
 
+class TextProcessor(ABC):
+    """Abstract base class for text processing to generate embeddings."""
+
+    @abstractmethod
+    def process(self, text: str) -> torch.Tensor:
+        """Process the input text and return its embedding.
+
+        Parameters
+        ----------
+        text : str
+            The input text to process.
+
+        Returns
+        -------
+        torch.Tensor
+            A tensor representing the processed text embedding.
+        """
+        pass
+
+
+class BertProcessor(TextProcessor):
+    """BERT-based implementation of the TextProcessor.
+
+    This class uses a pre-trained BERT model to tokenize input text and extract contextual embeddings.
+
+    Parameters
+    ----------
+    tokenizer : str, optional
+        The name of the BERT tokenizer to use (default is "bert-base-uncased").
+    model : str, optional
+        The name of the BERT model to use (default is "bert-base-uncased").
+    """
+
+    def __init__(self, tokenizer: str = "bert-base-uncased", model: str = "bert-base-uncased"):
+        self.tokenizer = BertTokenizer.from_pretrained(tokenizer)
+        self.model = BertModel.from_pretrained(model)
+
+    def tokenize_text(self, text: str) -> Dict[str, torch.Tensor]:
+        """Tokenize input text using the BERT tokenizer.
+
+        Parameters
+        ----------
+        text : str
+            The input string to tokenize.
+
+        Returns
+        -------
+        Dict[str, torch.Tensor]
+            A dictionary containing input IDs, attention masks, and token type IDs.
+        """
+        return self.tokenizer(text, return_tensors="pt")
+
+    def embed_tokens(self, tokens: Dict[str, torch.Tensor]) -> torch.Tensor:
+        """Generate token embeddings from tokenized input using BERT.
+
+        Parameters
+        ----------
+        tokens : Dict[str, torch.Tensor]
+            A dictionary containing tokenized inputs as returned by the tokenizer.
+
+        Returns
+        -------
+        torch.Tensor
+            A tensor of shape (batch_size, sequence_length, hidden_size)
+            representing contextual embeddings for each token.
+        """
+        with torch.no_grad():
+            outputs = self.model(**tokens)
+            return outputs.last_hidden_state
+
+    def process(self, text: str) -> torch.Tensor:
+        """Process the input text by tokenizing and generating BERT embeddings.
+
+        Parameters
+        ----------
+        text : str
+            The input text to process.
+
+        Returns
+        -------
+        torch.Tensor
+            A tensor of contextual embeddings for the input text.
+        """
+        tokens = self.tokenize_text(text)
+        embeddings = self.embed_tokens(tokens)
+
+        return embeddings
+
+
 if __name__ == "__main__":
     load_dotenv()
     Config.update_config()
@@ -144,3 +236,23 @@ if __name__ == "__main__":
     plt.xlabel("Frames")
     plt.ylabel("Mel Frequency Bins")
     plt.show()
+
+    processor = BertProcessor()
+
+    with open(os.path.join(Config.get("DATASET_DIR_PATH"), "Django Unchained (2012)", "segment_000003.txt")) as file:
+        text = file.read()
+
+    tokens_tensor = processor.tokenize_text(text)
+    token_embeddings = processor.embed_tokens(tokens_tensor)
+
+    # convert token IDs to tokens
+    input_ids = tokens_tensor["input_ids"][0]
+    tokens = processor.tokenizer.convert_ids_to_tokens(input_ids)
+
+    print(f"Input text: {text}\n")
+    print("Token\t\tEmbedding (first 5 values):")
+    print("=" * 50)
+    for token, embedding in zip(tokens, token_embeddings[0]):
+        # Display first 5 dimensions for readability
+        embedding_preview = embedding[:5].tolist()
+        print(f"{token:<12} {embedding_preview}")

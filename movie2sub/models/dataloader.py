@@ -9,7 +9,7 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
-from movie2sub.utils.preprocessing import AudioProcessor
+from movie2sub.models.preprocessing import AudioProcessor
 
 
 class MovieSubDataset(Dataset):
