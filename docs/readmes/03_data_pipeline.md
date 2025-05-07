@@ -92,7 +92,7 @@ We extract only the normal subtitles for a cleaner transcript.
 
 Once subtitles are extracted, we apply a text preprocessing pipeline to standardize the content:
 
-Remove HTML tags
+- Remove HTML tags
 - Replace leading hyphens (e.g., in dialogue lines)
 - Normalize whitespace (e.g., multiple spaces → single space)
 - Convert text to lowercase

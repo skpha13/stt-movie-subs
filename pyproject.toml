@@ -27,6 +27,11 @@ dependencies = [
     'soundfile~=0.13',
     'tqdm~=4.67',
     'spleeter~=2.4',
+    'torch~=2.7',
+    'torchaudio~=2.7',
+    'matplotlib~=3.10',
+    'scikit-learn~=1.6',
+    'transformers~=4.51',
 ]
 
 [project.optional-dependencies]
