@@ -4,7 +4,7 @@
 
 Before training our machine learning models, we performed several preprocessing steps on the raw audio data. These steps ensured that our input was both standardized and optimized for speech recognition tasks.
 
-We alredy started by filtering out audio clips with minimal dialogue, keeping only those with sufficient speech content. All audio samples were then trimmed or padded to exactly **30 seconds** in length to maintain consistency.
+We already started by filtering out audio clips with minimal dialogue, keeping only those with sufficient speech content. All audio samples were then trimmed or padded to exactly **30 seconds** in length to maintain consistency.
 
 ### Downmixing
 

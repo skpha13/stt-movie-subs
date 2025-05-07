@@ -39,7 +39,7 @@ def pad_audio(audio: np.ndarray, target_length: int) -> np.ndarray:
     Parameters
     ----------
     audio : np.ndarray
-        A 1D NumPy array representing the audio data to be padded.
+        A ND NumPy array representing the audio data to be padded.
 
     target_length : int
         The desired length of the output audio in terms of number of samples.
@@ -47,7 +47,7 @@ def pad_audio(audio: np.ndarray, target_length: int) -> np.ndarray:
     Returns
     -------
     np.ndarray
-        A 1D NumPy array of length `target_length`.
+        A ND NumPy array of length `target_length`.
     """
 
     if audio.shape[0] < target_length:
