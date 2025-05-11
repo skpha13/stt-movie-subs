@@ -4,6 +4,7 @@ from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import torch
+import torch.nn.functional as F
 import torchaudio
 from dotenv import load_dotenv
 from movie2sub.config import Config
@@ -271,6 +272,17 @@ class Wav2Vec2TextProcessor(TextProcessor):
             The number of tokens in the vocabulary.
         """
         return len(self.vocab_dict)
+
+
+def collate_fn(batch):
+    features, subtitles, token_ids = zip(*batch)
+
+    # pad token_ids to max sequence length
+    max_len = max(t.shape[0] for t in token_ids)
+    padded_token_ids = torch.stack([F.pad(t, (0, max_len - t.shape[0])) for t in token_ids])
+
+    features = torch.stack(features)
+    return features, list(subtitles), padded_token_ids
 
 
 if __name__ == "__main__":
