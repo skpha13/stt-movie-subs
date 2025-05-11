@@ -9,7 +9,7 @@ import torchaudio
 from datasets import Dataset, DatasetDict
 from dotenv import load_dotenv
 from jiwer import wer
-from movie2sub.config import Config
+from movie2sub.config import Config, get_project_root, resolve_path
 from torch.utils.data import DataLoader
 from transformers import (
     EarlyStoppingCallback,
@@ -358,9 +358,7 @@ def transcribe(batch, *, model, processor):  # force model/processor to be keywo
     return {"transcription": transcription}
 
 
-def test_wav2vec2():
-    checkpoint_dir = "../../checkpoints/wav2vec2/checkpoint_01"
-
+def test_wav2vec2(checkpoint_dir: str):
     processor = Wav2Vec2Processor.from_pretrained(checkpoint_dir)
     model = Wav2Vec2ForCTC.from_pretrained(checkpoint_dir)
     model.eval()
@@ -384,4 +382,7 @@ if __name__ == "__main__":
     load_dotenv()
     Config.update_config()
 
-    test_wav2vec2()
+    project_root = get_project_root()
+    checkpoints_path = resolve_path("checkpoints/wav2vec2/checkpoint_01", project_root)
+
+    test_wav2vec2(checkpoints_path)
