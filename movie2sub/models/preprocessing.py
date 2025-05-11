@@ -4,7 +4,6 @@ from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import torch
-import torch.nn.functional as F
 import torchaudio
 from dotenv import load_dotenv
 from movie2sub.config import Config
