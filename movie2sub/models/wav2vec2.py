@@ -98,7 +98,7 @@ def preprocess(batch: Dict[str, any], processor: Wav2Vec2Processor, resample_rat
     return batch
 
 
-def prepare_dataset(raw_dataset: Dataset, processor: Wav2Vec2Processor) -> DatasetDict:
+def prepare_dataset(raw_dataset: Dataset, processor: Wav2Vec2Processor, test_size: float = 0.2) -> DatasetDict:
     """Splits a raw dataset and applies preprocessing.
 
     Parameters
@@ -107,6 +107,8 @@ def prepare_dataset(raw_dataset: Dataset, processor: Wav2Vec2Processor) -> Datas
         The raw Hugging Face `Dataset` object.
     processor : Wav2Vec2Processor
         A processor for feature extraction and tokenization.
+    test_size: float, Optional
+        Ratio to split the dataset in train/test sets. Default is 0.2
 
     Returns
     -------
@@ -114,7 +116,7 @@ def prepare_dataset(raw_dataset: Dataset, processor: Wav2Vec2Processor) -> Datas
         A dictionary with train and test splits, each containing processed inputs.
     """
 
-    dataset = raw_dataset.train_test_split(test_size=0.1)
+    dataset = raw_dataset.train_test_split(test_size=test_size)
     preprocess_fn = partial(preprocess, processor=processor)
     return dataset.map(preprocess_fn, remove_columns=["audio", "text"])
 
@@ -243,17 +245,19 @@ def inference(model: torch.nn.Module, test_loader: DataLoader):
     -------
     None
     """
-
     for i, batch in enumerate(test_loader):
         with torch.no_grad():
             output = model(input_values=batch["input_values"].to(device))
-            print("Logits has NaNs:", torch.isnan(output.logits).any().item())
+
+            with processor.as_target_processor():
+                ground_truth = processor.batch_decode(batch["labels"], group_tokens=False, skip_special_tokens=True)[0]
 
             predicted_ids = torch.argmax(output.logits, dim=-1)
-            decoded_text = processor.decode(predicted_ids[0])
+            decoded_text = processor.decode(predicted_ids[0], skip_special_tokens=True)
 
+            print(f"\tInput: {i:02}")
+            print(f"Ground truth: {ground_truth}\n")
             print(f"Decoded text: {decoded_text}")
-            break
 
 
 training_args = TrainingArguments(
@@ -268,6 +272,8 @@ training_args = TrainingArguments(
     num_train_epochs=80,
     fp16=False,
     learning_rate=1e-6,
+    lr_scheduler_type="cosine",
+    warmup_steps=500,
     logging_strategy="steps",
     logging_dir="./logs",
     logging_steps=10,
@@ -293,7 +299,10 @@ if __name__ == "__main__":
     data_collator = DataCollatorCTC(processor=processor)
 
     raw_dataset = load_movie2sub_data("/kaggle/input/movie2sub-dataset/dataset")
+    test_dataset = load_movie2sub_data("/kaggle/input/movie2sub-dataset/dataset/test")
+
     dataset = prepare_dataset(raw_dataset, processor)
+    test_dataset = prepare_dataset(test_dataset, processor, test_size=1.0)
 
     model = Wav2Vec2ForCTC.from_pretrained(
         model_str,
@@ -311,7 +320,7 @@ if __name__ == "__main__":
         tokenizer=processor,
         data_collator=data_collator,
         compute_metrics=wrapped_compute_metrics,
-        callbacks=[EarlyStoppingCallback(early_stopping_patience=5)],
+        callbacks=[EarlyStoppingCallback(early_stopping_patience=10)],
     )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -319,8 +328,8 @@ if __name__ == "__main__":
     trainer.train()
 
     test_loader = DataLoader(
-        dataset["test"],
-        batch_size=4,
+        test_dataset["test"],
+        batch_size=8,
         shuffle=False,
         collate_fn=data_collator,
     )

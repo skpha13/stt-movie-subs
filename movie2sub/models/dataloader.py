@@ -58,22 +58,22 @@ class MovieSubDataset(Dataset):
         return self.data[idx]
 
 
-def load_movie_subs(root_dir: str, batch_size: int = 64) -> Tuple[DataLoader, DataLoader, DataLoader]:
-    """
-    Load movie subs dataset, split into train/val/test sets, and return corresponding DataLoaders.
+def fetch_samples(root_dir: str) -> List[Tuple[str, str]]:
+    """Traverse the directory structure to collect pairs of .wav and .txt file paths.
 
     Parameters
     ----------
     root_dir : str
-        Path to the dataset directory containing subdirectories for each movie.
-    batch_size : int, optional
-        Batch size for the DataLoaders. Default is 64.
+       The root directory containing subdirectories, each representing a movie
+       with .wav and corresponding .txt transcript files.
 
     Returns
     -------
-    Tuple[DataLoader, DataLoader, DataLoader]
-        DataLoaders for training, validation, and test datasets.
+    List[Tuple[str, str]]
+       A list of tuples, where each tuple contains the full paths to a .wav audio file
+       and its corresponding .txt transcript file. Only pairs where both files exist are included.
     """
+
     all_samples = []
 
     for movie_name in os.listdir(root_dir):
@@ -91,17 +91,37 @@ def load_movie_subs(root_dir: str, batch_size: int = 64) -> Tuple[DataLoader, Da
                 if os.path.exists(wav_path) and os.path.exists(txt_path):
                     all_samples.append((wav_path, txt_path))
 
+    return all_samples
+
+
+def load_movie_subs(root_dir: str, batch_size: int = 64) -> Tuple[DataLoader, DataLoader, DataLoader]:
+    """Load movie subs dataset, split into train/val/test sets, and return corresponding DataLoaders.
+
+    Parameters
+    ----------
+    root_dir : str
+        Path to the dataset directory containing subdirectories for each movie.
+    batch_size : int, optional
+        Batch size for the DataLoaders. Default is 64.
+
+    Returns
+    -------
+    Tuple[DataLoader, DataLoader, DataLoader]
+        DataLoaders for training, validation, and test datasets.
+    """
+    all_samples = fetch_samples(os.path.join(root_dir, "train"))
+    test_samples = fetch_samples(os.path.join(root_dir, "test"))
+
     # shuffle and split
     random.seed(42)
     random.shuffle(all_samples)
 
-    train_data, temp_data = train_test_split(all_samples, test_size=0.3, random_state=42)
-    val_data, test_data = train_test_split(temp_data, test_size=0.5, random_state=42)
+    train_data, val_data = train_test_split(all_samples, test_size=0.3, random_state=42)
 
     # create DataLoaders
     train_loader = DataLoader(MovieSubDataset(train_data), batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(MovieSubDataset(val_data), batch_size=batch_size, shuffle=False)
-    test_loader = DataLoader(MovieSubDataset(test_data), batch_size=batch_size, shuffle=False)
+    test_loader = DataLoader(MovieSubDataset(test_samples), batch_size=batch_size, shuffle=False)
 
     return train_loader, val_loader, test_loader
 

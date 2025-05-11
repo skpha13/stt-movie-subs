@@ -184,7 +184,9 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=logging.INFO)
 
-    audio_file = os.path.join(Config.get("AUDIO_DIR_PATH"), "Dazed.and.Confused.1993.1080p.BluRay.DTS.x264-VietHD.wav")
+    audio_file = os.path.join(
+        Config.get("AUDIO_DIR_PATH"), "Once.Upon.a.Time.in.Hollywood.2019.BDRip.DD5.1.x264-playSD.wav"
+    )
     sub_file = os.path.join(Config.get("SUBTITLE_DIR_PATH"), "subtitle_eng_3.srt")
     segmenter = AudioSubSegmenter(audio_file, sub_file, max_segment_length=30)
 

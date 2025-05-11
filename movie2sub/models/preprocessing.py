@@ -273,47 +273,6 @@ class Wav2Vec2TextProcessor(TextProcessor):
         return len(self.vocab_dict)
 
 
-def collate_fn(batch):
-    """Collate function for batching data samples.
-
-    Pads the text embeddings to equal size and stacks the features.
-
-    Parameters
-    ----------
-    batch : list of tuples
-        Each item is a tuple (features, subtitle, embedding), where:
-            - features (Tensor): Feature tensor for a sample.
-            - subtitle (str): Subtitle text.
-            - embedding (Tensor): Text embedding of shape (C, L).
-
-    Returns
-    -------
-    features : Tensor
-        Stacked feature tensors.
-
-    subtitles : list of str
-        Subtitle strings for each sample.
-
-    padded_embeddings : Tensor
-        Embeddings padded to the same length, shape (B, C, max_len).
-    """
-
-    features, subtitles, token_ids = zip(*batch)
-
-    # pad token_ids for CTC loss
-    max_token_len = max(len(ids) for ids in token_ids)
-
-    # Create padded tensor and lengths tensor for CTC
-    padded_token_ids = torch.zeros(len(token_ids), max_token_len, dtype=torch.long)
-    token_lengths = torch.tensor([len(ids) for ids in token_ids], dtype=torch.long)
-
-    for i, ids in enumerate(token_ids):
-        padded_token_ids[i, : len(ids)] = torch.tensor(ids, dtype=torch.long)
-
-    features = torch.stack(features)
-    return features, list(subtitles), padded_token_ids, token_lengths
-
-
 if __name__ == "__main__":
     load_dotenv()
     Config.update_config()
