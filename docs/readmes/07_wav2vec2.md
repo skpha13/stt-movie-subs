@@ -9,7 +9,7 @@ Wav2Vec2 provides strong performance in low-resource ASR tasks by leveraging uns
 ## Architecture
 
 ![Wav2Vec2 Framework](../assets/wav2vec2_framework.png)
-> llustration of Wav2Vec2 framework which jointly learns contextualized speech representations
+> Illustration of Wav2Vec2 framework which jointly learns contextualized speech representations
 and an inventory of discretized speech units.
 
 ### Feature Encoder
