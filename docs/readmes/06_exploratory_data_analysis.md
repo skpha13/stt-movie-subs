@@ -23,9 +23,10 @@ We conducted the following analyses:
 ![SNR](../../plots/eda/distribution_of_snr.png)
 
 For Signal to Noise Ratio distribution we used the following formula:
-$$
+
+```math
 \text{SNR (dB)} = 10 \cdot \log_{10}\left(\frac{P_{\text{signal}}}{P_{\text{noise}}}\right)
-$$
+```
 
 The SNR values appear to be heavily skewed towards the lower range (close to 0). This indicates that the majority of the audio samples in the dataset have relatively low SNR, potentially implying that the audio is noisy.
 

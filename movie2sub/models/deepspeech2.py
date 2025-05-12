@@ -112,7 +112,7 @@ if __name__ == "__main__":
 
     _, _, test_loader = load_movie_subs(Config.get("DATASET_DIR_PATH"), processor)
 
-    checkpoint_path = "../../checkpoints/DeepSpeech2/deepspeech2.pth"
+    checkpoint_path = "../../checkpoints/deepspeech2/deepspeech2.pth"
     checkpoint = torch.load(checkpoint_path, map_location=torch.device("cpu"))
 
     model = FasterDeepSpeech2()

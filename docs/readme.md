@@ -7,7 +7,7 @@
 
 ## Documentation
 
-### [0. Exploratory Data Analysis](readmes/06-exploratory-data-analysis.md)
+### [0. Exploratory Data Analysis](readmes/06_exploratory_data_analysis.md)
 
 ### [1. Data Pipeline](./readmes/03_data_pipeline.md)
 
