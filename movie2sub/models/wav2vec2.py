@@ -7,7 +7,9 @@ import matplotlib.pyplot as plt
 import torch
 import torchaudio
 from datasets import Dataset, DatasetDict
-from jiwer import wer
+from dotenv import load_dotenv
+from jiwer import cer, wer
+from movie2sub.config import Config, get_project_root, resolve_path
 from torch.utils.data import DataLoader
 from transformers import (
     EarlyStoppingCallback,
@@ -85,11 +87,14 @@ def preprocess(batch: Dict[str, any], processor: Wav2Vec2Processor, resample_rat
     # normalize
     waveform = waveform / waveform.abs().max()
 
-    inputs = processor(waveform.squeeze().numpy(), sampling_rate=resample_rate, return_attention_mask=True)
-    input_values = inputs.input_values[0]
+    input = processor(waveform.squeeze().numpy(), sampling_rate=resample_rate, return_attention_mask=True)
+    input_values = input.input_values[0]
+
+    input_values_min, input_values_max = min(input_values), max(input_values)
+    input_values = 2 * (input_values - input_values_min) / (input_values_max - input_values_min) - 1
 
     batch["input_values"] = input_values
-    batch["attention_mask"] = inputs.attention_mask[0]
+    batch["attention_mask"] = input.attention_mask[0]
 
     # process text before tokenization
     processed_text = batch["text"].upper().replace(" ", "|").replace("\n", "|")
@@ -98,7 +103,7 @@ def preprocess(batch: Dict[str, any], processor: Wav2Vec2Processor, resample_rat
     return batch
 
 
-def prepare_dataset(raw_dataset: Dataset, processor: Wav2Vec2Processor, test_size: float = 0.2) -> DatasetDict:
+def prepare_dataset(raw_dataset: Dataset, processor: Wav2Vec2Processor, test_size: float | None = None) -> DatasetDict:
     """Splits a raw dataset and applies preprocessing.
 
     Parameters
@@ -107,8 +112,8 @@ def prepare_dataset(raw_dataset: Dataset, processor: Wav2Vec2Processor, test_siz
         The raw Hugging Face `Dataset` object.
     processor : Wav2Vec2Processor
         A processor for feature extraction and tokenization.
-    test_size: float, Optional
-        Ratio to split the dataset in train/test sets. Default is 0.2
+    test_size: float | None, Optional
+        Ratio to split the dataset in train/test sets. Default is None
 
     Returns
     -------
@@ -116,9 +121,9 @@ def prepare_dataset(raw_dataset: Dataset, processor: Wav2Vec2Processor, test_siz
         A dictionary with train and test splits, each containing processed inputs.
     """
 
-    dataset = raw_dataset.train_test_split(test_size=test_size)
+    dataset = raw_dataset.train_test_split(test_size=test_size) if test_size is not None else raw_dataset
     preprocess_fn = partial(preprocess, processor=processor)
-    return dataset.map(preprocess_fn, remove_columns=["audio", "text"])
+    return dataset.map(preprocess_fn, remove_columns=["audio"])
 
 
 def wer_metric(pred: EvalPrediction, processor: Wav2Vec2Processor):
@@ -231,13 +236,15 @@ def plot_train_validation_loss(trainer: Trainer) -> None:
     plt.show()
 
 
-def inference(model: torch.nn.Module, test_loader: DataLoader):
+def inference(model: torch.nn.Module, processor: Wav2Vec2Processor, test_loader: DataLoader):
     """Runs inference on a single batch and prints decoded output.
 
     Parameters
     ----------
     model : torch.nn.Module
         A trained speech model.
+    processor: Wav2Vec2Processor
+        The pretrained Wav2Vec2Processor.
     test_loader : DataLoader
         A PyTorch DataLoader containing test data.
 
@@ -245,48 +252,49 @@ def inference(model: torch.nn.Module, test_loader: DataLoader):
     -------
     None
     """
-    for i, batch in enumerate(test_loader):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    for _, batch in enumerate(test_loader):
         with torch.no_grad():
             output = model(input_values=batch["input_values"].to(device))
 
             with processor.as_target_processor():
-                ground_truth = processor.batch_decode(batch["labels"], group_tokens=False, skip_special_tokens=True)[0]
+                ground_truths = processor.batch_decode(batch["labels"], group_tokens=False, skip_special_tokens=True)
 
             predicted_ids = torch.argmax(output.logits, dim=-1)
-            decoded_text = processor.decode(predicted_ids[0], skip_special_tokens=True)
+            decoded_texts = processor.batch_decode(predicted_ids, skip_special_tokens=True)
 
-            print(f"\tInput: {i:02}")
-            print(f"Ground truth: {ground_truth}\n")
-            print(f"Decoded text: {decoded_text}")
+            for j, (gt, pred) in enumerate(zip(ground_truths, decoded_texts)):
+                print(f"\tInput {j:02}")
+                print(f"Ground truth: {gt}\n")
+                print(f"Decoded text: {pred}\n")
 
 
 training_args = TrainingArguments(
     output_dir="./wav2vec2-finetuned-moviesubs",
     group_by_length=True,
     dataloader_num_workers=4,
-    per_device_train_batch_size=4,
-    gradient_accumulation_steps=2,
+    per_device_train_batch_size=2,
     eval_strategy="epoch",
     save_strategy="epoch",
     load_best_model_at_end=True,
     num_train_epochs=80,
     fp16=False,
-    learning_rate=1e-6,
-    lr_scheduler_type="cosine",
-    warmup_steps=500,
+    learning_rate=1e-7,
     logging_strategy="steps",
     logging_dir="./logs",
     logging_steps=10,
     report_to="none",
     save_total_limit=1,
     remove_unused_columns=False,
-    max_grad_norm=0.5,
+    max_grad_norm=0.05,
 )
 
 
-if __name__ == "__main__":
-    warnings.filterwarnings("ignore")
+def train():
+    # warnings.filterwarnings("ignore")
     os.environ["WANDB_DISABLED"] = "true"
+    torch.autograd.set_detect_anomaly(True)  # to crash in case of anomaly
     model_str = "facebook/wav2vec2-base-960h"
 
     processor = Wav2Vec2Processor.from_pretrained(
@@ -298,17 +306,18 @@ if __name__ == "__main__":
     )
     data_collator = DataCollatorCTC(processor=processor)
 
-    raw_dataset = load_movie2sub_data("/kaggle/input/movie2sub-dataset/dataset")
-    test_dataset = load_movie2sub_data("/kaggle/input/movie2sub-dataset/dataset/test")
+    raw_dataset = load_movie2sub_data(os.path.join(Config.get("DATASET_DIR_PATH"), "train"))
+    test_dataset = load_movie2sub_data(os.path.join(Config.get("DATASET_DIR_PATH"), "test"))
 
-    dataset = prepare_dataset(raw_dataset, processor)
-    test_dataset = prepare_dataset(test_dataset, processor, test_size=1.0)
+    dataset = prepare_dataset(raw_dataset, processor, test_size=0.2)
+    test_dataset = prepare_dataset(test_dataset, processor)
 
     model = Wav2Vec2ForCTC.from_pretrained(
         model_str,
         vocab_size=len(processor.tokenizer),
         ctc_loss_reduction="mean",
         pad_token_id=processor.tokenizer.pad_token_id,
+        ctc_zero_infinity=True,
     )
 
     wrapped_compute_metrics = partial(wer_metric, processor=processor)
@@ -325,6 +334,7 @@ if __name__ == "__main__":
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
+
     trainer.train()
 
     test_loader = DataLoader(
@@ -333,4 +343,67 @@ if __name__ == "__main__":
         shuffle=False,
         collate_fn=data_collator,
     )
-    inference(model, test_loader)
+    inference(model, processor, test_loader)
+
+
+def transcribe(batch, *, model, processor):  # force model/processor to be keyword-only
+    input_values = torch.tensor(batch["input_values"]).unsqueeze(0)
+    attention_mask = torch.tensor(batch["attention_mask"]).unsqueeze(0)
+    label_ids = batch["labels"]
+
+    with torch.no_grad():
+        logits = model(input_values, attention_mask=attention_mask).logits
+        predicted_ids = torch.argmax(logits, dim=-1)
+
+    transcription = processor.batch_decode(predicted_ids)[0]
+    reference = processor.batch_decode([label_ids], group_tokens=False)[0]
+
+    sample_wer = wer(reference, transcription)
+    sample_cer = cer(reference, transcription)
+
+    return {
+        "transcription": transcription,
+        "reference": reference,
+        "wer": sample_wer,
+        "cer": sample_cer,
+    }
+
+
+def test_wav2vec2(checkpoint_dir: str):
+    processor = Wav2Vec2Processor.from_pretrained(checkpoint_dir)
+    model = Wav2Vec2ForCTC.from_pretrained(checkpoint_dir)
+    model.eval()
+
+    test_dataset = load_movie2sub_data(os.path.join(Config.get("DATASET_DIR_PATH"), "test"))
+    test_dataset = prepare_dataset(test_dataset, processor)
+
+    transcribe_fn = partial(transcribe, model=model, processor=processor)
+    results = test_dataset.map(transcribe_fn)
+
+    for i in range(5):
+        reference_str = results[i]["reference"].replace("\n", " ")
+        predicted_str = results[i]["transcription"]
+        wer = results[i]["wer"]
+        cer = results[i]["cer"]
+
+        print("Reference:", reference_str)
+        print("Predicted:", predicted_str)
+        print("WER: ", wer)
+        print("CER: ", cer)
+        print()
+
+    avg_wer = sum([x["wer"] for x in results]) / len(results)
+    avg_cer = sum(r["cer"] for r in results) / len(results)
+    print(f"Average WER on test set: {avg_wer:.4f}")
+    print(f"Average CER on test set: {avg_cer:.4f}")
+
+
+if __name__ == "__main__":
+    load_dotenv()
+    Config.update_config()
+    warnings.filterwarnings("ignore")
+
+    project_root = get_project_root()
+    checkpoints_path = resolve_path("checkpoints/wav2vec2/checkpoint-15276", project_root)
+
+    test_wav2vec2(checkpoints_path)
