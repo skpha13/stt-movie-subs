@@ -147,13 +147,13 @@ Context: Screaming woman in background, two speakers.
 **Ground Truth**:
 
 ```
-how'd your little talk with george go are we kidnapping him not the word i'd use now you've talked to him you believe everything's all right not exactly this was a mistake you should leave way ahead of you george isn't blind you're the blind one girls yelling indistinctly
+HOW'D YOUR LITTLE TALK WITH GEORGE GO ARE WE KIDNAPPING HIM NOT THE WORD I'D USE NOW YOU'VE TALKED TO HIM YOU BELIEVE EVERYTHING'S ALL RIGHT NOT EXACTLY THIS WAS A MISTAKE YOU SHOULD LEAVE WAY AHEAD OF YOU GEORGE ISN'T BLIND YOU'RE THE BLIND ONE GIRLS YELLING INDISTINCTLY
 ```
 
 **Prediction**:
 
 ```
-hav your little talk with george to go ar we kid nappingham not the word i'd use well now tht you've talkd tohome do you believe everything's all right not exactly this was a mistake you should leave wher  george and blind ger blind blind
+HAV YOUR LITTLE TALK WITH GEORGE TO GO AR WE KID NAPPINGHAM NOT THE WORD I'D USE WELL NOW THT YOU'VE TALKD TOHOME DO YOU BELIEVE EVERYTHING'S ALL RIGHT NOT EXACTLY THIS WAS A MISTAKE YOU SHOULD LEAVE WHER  GEORGE AND BLIND GER BLIND BLIND
 ```
 
 **WER**:  `0.4285`
