@@ -381,8 +381,9 @@ def test_wav2vec2(checkpoint_dir: str):
 if __name__ == "__main__":
     load_dotenv()
     Config.update_config()
+    warnings.filterwarnings("ignore")
 
     project_root = get_project_root()
-    checkpoints_path = resolve_path("checkpoints/wav2vec2/checkpoint_01", project_root)
+    checkpoints_path = resolve_path("checkpoints/wav2vec2/checkpoint-15276", project_root)
 
     test_wav2vec2(checkpoints_path)
