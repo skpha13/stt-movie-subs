@@ -8,7 +8,7 @@ import torch
 import torchaudio
 from datasets import Dataset, DatasetDict
 from dotenv import load_dotenv
-from jiwer import wer
+from jiwer import cer, wer
 from movie2sub.config import Config, get_project_root, resolve_path
 from torch.utils.data import DataLoader
 from transformers import (
@@ -349,13 +349,24 @@ def train():
 def transcribe(batch, *, model, processor):  # force model/processor to be keyword-only
     input_values = torch.tensor(batch["input_values"]).unsqueeze(0)
     attention_mask = torch.tensor(batch["attention_mask"]).unsqueeze(0)
+    label_ids = batch["labels"]
 
     with torch.no_grad():
         logits = model(input_values, attention_mask=attention_mask).logits
         predicted_ids = torch.argmax(logits, dim=-1)
-        transcription = processor.batch_decode(predicted_ids)[0]
 
-    return {"transcription": transcription}
+    transcription = processor.batch_decode(predicted_ids)[0]
+    reference = processor.batch_decode([label_ids], group_tokens=False)[0]
+
+    sample_wer = wer(reference, transcription)
+    sample_cer = cer(reference, transcription)
+
+    return {
+        "transcription": transcription,
+        "reference": reference,
+        "wer": sample_wer,
+        "cer": sample_cer,
+    }
 
 
 def test_wav2vec2(checkpoint_dir: str):
@@ -370,12 +381,21 @@ def test_wav2vec2(checkpoint_dir: str):
     results = test_dataset.map(transcribe_fn)
 
     for i in range(5):
-        reference_str = test_dataset[i]["text"].replace("\n", " ")
-        predicted_str = results[i]["transcription"].lower()
+        reference_str = results[i]["reference"].replace("\n", " ")
+        predicted_str = results[i]["transcription"]
+        wer = results[i]["wer"]
+        cer = results[i]["cer"]
 
         print("Reference:", reference_str)
         print("Predicted:", predicted_str)
+        print("WER: ", wer)
+        print("CER: ", cer)
         print()
+
+    avg_wer = sum([x["wer"] for x in results]) / len(results)
+    avg_cer = sum(r["cer"] for r in results) / len(results)
+    print(f"Average WER on test set: {avg_wer:.4f}")
+    print(f"Average CER on test set: {avg_cer:.4f}")
 
 
 if __name__ == "__main__":

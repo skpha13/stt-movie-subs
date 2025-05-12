@@ -156,6 +156,10 @@ how'd your little talk with george go are we kidnapping him not the word i'd use
 hav your little talk with george to go ar we kid nappingham not the word i'd use well now tht you've talkd tohome do you believe everything's all right not exactly this was a mistake you should leave wher  george and blind ger blind blind
 ```
 
+**WER**:  `0.4285`
+
+**CER**:  `0.2867`
+
 #### segment_000184.wav
 
 Context: Clean audio, good volume.
@@ -163,14 +167,18 @@ Context: Clean audio, good volume.
 **Ground Truth**:
 
 ```
-you the mama bear can i help you i hope so i'm an old friend of george's thought i'd stop and say hello that's very nice of you but you picked the wrong time george is taking a nap right now oh that is unfortunate yes it is what's your name cliff booth how do you know george i used to shoot westerns here at the ranch when was the last time you saw george
+YOU THE MAMA BEAR CAN I HELP YOU I HOPE SO I'M AN OLD FRIEND OF GEORGE'S THOUGHT I'D STOP AND SAY HELLO THAT'S VERY NICE OF YOU BUT YOU PICKED THE WRONG TIME GEORGE IS TAKING A NAP RIGHT NOW OH THAT IS UNFORTUNATE YES IT IS WHAT'S YOUR NAME CLIFF BOOTH HOW DO YOU KNOW GEORGE I USED TO SHOOT WESTERNS HERE AT THE RANCH WHEN WAS THE LAST TIME YOU SAW GEORGE
 ```
 
 **Prediction**:
 
 ```
-mama bear can i helpe you i hope so i'm an old friend of georges thought i stop say hallo it's very nice of you but unfortunately picked o the wrong time george's taking a man byto oh that is unfortuyes itis what's your name cliff bot had he know george i used to shot westrn sheere at the randage when i was last time you saw a george
+MAMA BEAR CAN I HELPE YOU I HOPE SO I'M AN OLD FRIEND OF GEORGES THOUGHT I STOP SAY HALLO IT'S VERY NICE OF YOU BUT UNFORTUNATELY PICKED O THE WRONG TIME GEORGE'S TAKING A MAN BYTO OH THAT IS UNFORTUYES ITIS WHAT'S YOUR NAME CLIFF BOT HAD HE KNOW GEORGE I USED TO SHOT WESTRN SHEERE AT THE RANDAGE WHEN I WAS LAST TIME YOU SAW A GEORGE
 ```
+
+**WER**:  `0.4000`
+
+**CER**:  `0.2134`
 
 #### segment_000047.wav
 
@@ -179,14 +187,18 @@ Context: Minimal background noise, low volume.
 **Ground Truth**:
 
 ```
-growls peggy on tv i waited at the bar till closing time but he never came back man on tv okay peggy what happened peggy i don't know everything was fine we had dinner at my house and afterwards you know while i was doing the dishes tsk tsk whines he and tobey played and then at the club gabe was doing great then wham a sudden change you know how musicians are they're temperamental cats who knows what got into him yeah
+GROWLS PEGGY ON TV I WAITED AT THE BAR TILL CLOSING TIME BUT HE NEVER CAME BACK MAN ON TV OKAY PEGGY WHAT HAPPENED PEGGY I DON'T KNOW EVERYTHING WAS FINE WE HAD DINNER AT MY HOUSE AND AFTERWARDS YOU KNOW WHILE I WAS DOING THE DISHES TSK TSK WHINES HE AND TOBEY PLAYED AND THEN AT THE CLUB GABE WAS DOING GREAT THEN WHAM A SUDDEN CHANGE YOU KNOW HOW MUSICIANS ARE THEY'RE TEMPERAMENTAL CATS WHO KNOWS WHAT GOT INTO HIM YEAH
 ```
 
 **Prediction**:
 
 ```
-h  wis  oto losing time hou never came back your kit jagi wa i don't know everything was fine  o and after it's dot young while i doing the dishesye   dhe was n ra and we sudden change you know how musicians either temperamental cats who knows what got into o
+H  WIS  OTO LOSING TIME HOU NEVER CAME BACK YOUR KIT JAGI WA I DON'T KNOW EVERYTHING WAS FINE  O AND AFTER IT'S DOT YOUNG WHILE I DOING THE DISHESYE   DHE WAS N RA AND WE SUDDEN CHANGE YOU KNOW HOW MUSICIANS EITHER TEMPERAMENTAL CATS WHO KNOWS WHAT GOT INTO O
 ```
+
+**WER**:  `0.6626`
+
+**CER**:  `0.4644`
 
 #### segment_000096.wav
 
@@ -195,14 +207,18 @@ Context: Powerful background noise.
 **Ground Truth**:
 
 ```
-i got my book say say where's the badguy saloon you just go straight through the western town take a right and a left and you see it right there thanks honey clears throat man 1 can we move to number two man 2 how is his bounce man 1 can i get a bounce there man 2 just grab the crescent wrench come right back just make it a quick one tim man 1 looks great right there
+I GOT MY BOOK SAY SAY WHERE'S THE BADGUY SALOON YOU JUST GO STRAIGHT THROUGH THE WESTERN TOWN TAKE A RIGHT AND A LEFT AND YOU SEE IT RIGHT THERE THANKS HONEY CLEARS THROAT MAN <unk> CAN WE MOVE TO NUMBER TWO MAN <unk> HOW IS HIS BOUNCE MAN <unk> CAN I GET A BOUNCE THERE MAN <unk> JUST GRAB THE CRESCENT WRENCH COME RIGHT BACK JUST MAKE IT A QUICK ONE TIM MAN <unk> LOOKS GREAT RIGHT THERE
 ```
 
 **Prediction**:
 
 ```
-agag i'm a buy say say where's a bad gods alone he just go straight to the western town take a right and a left and you see it right there aks hunny  an a u  cure owe  like a ai er
+AGAG I'M A BUY SAY SAY WHERE'S A BAD GODS ALONE HE JUST GO STRAIGHT TO THE WESTERN TOWN TAKE A RIGHT AND A LEFT AND YOU SEE IT RIGHT THERE AKS HUNNY  AN A U  CURE OWE  LIKE A AI ER
 ```
+
+**WER**:  `0.7215`
+
+**CER**:  `0.6066`
 
 #### segment_0000001.wav
 
@@ -211,11 +227,19 @@ Context: Two male speakers, background music.
 **Ground Truth**:
 
 ```
-about to get his jaw busted grunts amateurs try and take men in alive all grunt amateurs usually don't make it announcer whether you're dead or alive you're just a dollar sign to jake cahill on bounty law thursdays at 830 only on nbc nbc theme plays hello everybody this is allen kincade on the set of the exciting hit nbc and screen gems television series bounty law
+ABOUT TO GET HIS JAW BUSTED GRUNTS AMATEURS TRY AND TAKE MEN IN ALIVE ALL GRUNT AMATEURS USUALLY DON'T MAKE IT ANNOUNCER WHETHER YOU'RE DEAD OR ALIVE YOU'RE JUST A DOLLAR SIGN TO JAKE CAHILL ON BOUNTY LAW THURSDAYS AT <unk><unk><unk> ONLY ON NBC NBC THEME PLAYS HELLO EVERYBODY THIS IS ALLEN KINCADE ON THE SET OF THE EXCITING HIT NBC AND SCREEN GEMS TELEVISION SERIES BOUNTY LAW
 ```
 
 **Prediction**:
 
 ```
-it is jumus o amateur's tryind take men in alive  a amateurs usually don't make it whether you're dead or alive you're just do dollar sign to cake cake law n shoty law thursday surday thirty only on n b c hellow everybody tis as allan chin kade on the set of the exciting hit n b c and screen gem stellivision series bouty law
+IT IS JUMUS O AMATEUR'S TRYIND TAKE MEN IN ALIVE  A AMATEURS USUALLY DON'T MAKE IT WHETHER YOU'RE DEAD OR ALIVE YOU'RE JUST DO DOLLAR SIGN TO CAKE CAKE LAW N SHOTY LAW THURSDAY SURDAY THIRTY ONLY ON N B C HELLOW EVERYBODY TIS AS ALLAN CHIN KADE ON THE SET OF THE EXCITING HIT N B C AND SCREEN GEM STELLIVISION SERIES BOUTY LAW
 ```
+
+**WER**:  `0.5588`
+
+**CER**:  `0.2849`
+
+**AVERAGE WER**: `0.5543`
+
+**AVERAGE CER**: `0.3713`
