@@ -1,0 +1,39 @@
+{
+  "segments": [
+    {
+      "audio": "segment_000001.wav",
+      "subtitles": "segment_000001.txt",
+      "speakers": ["speaker_1", "speaker_2"],
+      "background": "music",
+      "notes": "Two man speakers with background music"
+    },
+    {
+      "audio": "segment_000047.wav",
+      "subtitles": "segment_000047.txt",
+      "speakers": ["woman", "man"],
+      "background": "minimal",
+      "notes": "Dialogue with minimal background noise, low volume"
+    },
+    {
+      "audio": "segment_000096.wav",
+      "subtitles": "segment_000096.txt",
+      "speakers": ["woman", "man"],
+      "background": "powerful",
+      "notes": "Powerful background audio, speech presence not specified"
+    },
+    {
+      "audio": "segment_000184.wav",
+      "subtitles": "segment_000184.txt",
+      "speakers": ["woman", "man"],
+      "background": "clean",
+      "notes": "Clean dialogue with good volume"
+    },
+    {
+      "audio": "segment_000200.wav",
+      "subtitles": "segment_000200.txt",
+      "speakers": ["woman", "man"],
+      "background": "minimal",
+      "notes": "Dialogue with screaming woman"
+    }
+  ]
+}

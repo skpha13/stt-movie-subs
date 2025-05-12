@@ -1,6 +1,6 @@
 import os
 from abc import ABC, abstractmethod
-from typing import Dict
+from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import torch
@@ -8,7 +8,7 @@ import torch.nn.functional as F
 import torchaudio
 from dotenv import load_dotenv
 from movie2sub.config import Config
-from transformers import BertModel, BertTokenizer
+from transformers import BertTokenizer, Wav2Vec2Processor
 
 
 class AudioProcessor:
@@ -128,6 +128,11 @@ class AudioProcessor:
         mel_spec = AudioProcessor.mel_spectrogram_transform(waveform)
         log_mel_spec = AudioProcessor.log_transform(mel_spec + AudioProcessor.EPSILON)  # add epsilon to avoid log(0)
 
+        # normalize
+        mean = log_mel_spec.mean(dim=(1, 2), keepdim=True)
+        std = log_mel_spec.std(dim=(1, 2), keepdim=True)
+        log_mel_spec = (log_mel_spec - mean) / (std + 1e-5)
+
         return log_mel_spec
 
 
@@ -156,21 +161,18 @@ class TextProcessor(ABC):
 class BertProcessor(TextProcessor):
     """BERT-based implementation of the TextProcessor.
 
-    This class uses a pre-trained BERT model to tokenize input text and extract contextual embeddings.
+    This class uses a pre-trained BERT model to tokenize input text.
 
     Parameters
     ----------
     tokenizer : str, optional
         The name of the BERT tokenizer to use (default is "bert-base-uncased").
-    model : str, optional
-        The name of the BERT model to use (default is "bert-base-uncased").
     """
 
-    def __init__(self, tokenizer: str = "bert-base-uncased", model: str = "bert-base-uncased"):
+    def __init__(self, tokenizer: str = "bert-base-uncased"):
         self.tokenizer = BertTokenizer.from_pretrained(tokenizer)
-        self.model = BertModel.from_pretrained(model).to(BertProcessor.device)
 
-    def tokenize_text(self, text: str) -> Dict[str, torch.Tensor]:
+    def tokenize_text(self, text: str) -> torch.Tensor:
         """Tokenize input text using the BERT tokenizer.
 
         Parameters
@@ -183,25 +185,7 @@ class BertProcessor(TextProcessor):
         Dict[str, torch.Tensor]
             A dictionary containing input IDs, attention masks, and token type IDs.
         """
-        return self.tokenizer(text, return_tensors="pt").to(BertProcessor.device)
-
-    def embed_tokens(self, tokens: Dict[str, torch.Tensor]) -> torch.Tensor:
-        """Generate token embeddings from tokenized input using BERT.
-
-        Parameters
-        ----------
-        tokens : Dict[str, torch.Tensor]
-            A dictionary containing tokenized inputs as returned by the tokenizer.
-
-        Returns
-        -------
-        torch.Tensor
-            A tensor of shape (batch_size, sequence_length, hidden_size)
-            representing contextual embeddings for each token.
-        """
-        with torch.no_grad():
-            outputs = self.model(**tokens)
-            return outputs.last_hidden_state
+        return self.tokenizer(text, return_tensors="pt")["input_ids"].squeeze(0).to(BertProcessor.device)
 
     def process(self, text: str) -> torch.Tensor:
         """Process the input text by tokenizing and generating BERT embeddings.
@@ -214,47 +198,91 @@ class BertProcessor(TextProcessor):
         Returns
         -------
         torch.Tensor
-            A tensor of contextual embeddings for the input text.
+            A tensor of token ids for the input text. The token ids maximum values is 30.522.
         """
-        tokens = self.tokenize_text(text)
-        embeddings = self.embed_tokens(tokens)
+        token_ids = self.tokenize_text(text)
 
-        return embeddings
+        return token_ids
+
+    def __len__(self):
+        """Get the size of the tokenizer vocabulary.
+
+        Returns
+        -------
+        int
+            The number of tokens in the vocabulary.
+        """
+        return self.tokenizer.total_vocab_size
 
 
-def collate_fn(batch):
-    """Collate function for batching data samples.
-
-    Pads the text embeddings to equal size and stacks the features.
+class Wav2Vec2TextProcessor(TextProcessor):
+    """Wav2Vec2-based processor that extracts token ids from text.
 
     Parameters
     ----------
-    batch : list of tuples
-        Each item is a tuple (features, subtitle, embedding), where:
-            - features (Tensor): Feature tensor for a sample.
-            - subtitle (str): Subtitle text.
-            - embedding (Tensor): Text embedding of shape (C, L).
-
-    Returns
-    -------
-    features : Tensor
-        Stacked feature tensors.
-
-    subtitles : list of str
-        Subtitle strings for each sample.
-
-    padded_embeddings : Tensor
-        Embeddings padded to the same length, shape (B, C, max_len).
+    model_name : str, optional
+        The pretrained Wav2Vec2 processor to use (default is "facebook/wav2vec2-base-960h").
     """
 
-    features, subtitles, embeddings = zip(*batch)
+    def __init__(self, model_name: str = "facebook/wav2vec2-base-960h"):
+        self.processor = Wav2Vec2Processor.from_pretrained(model_name)
+        self.vocab_dict = self.processor.tokenizer.get_vocab()
+        self.char_to_id = {k: v for k, v in self.vocab_dict.items()}
+        self.id_to_char = {v: k for k, v in self.vocab_dict.items()}
 
-    # pad embeddings to max sequence length
-    max_len = max(e.shape[1] for e in embeddings)
-    padded_embeddings = torch.stack([F.pad(e, (0, 0, 0, max_len - e.shape[1])) for e in embeddings])
+    def process(self, text: str) -> torch.Tensor:
+        """Character based tokenizer
+
+        Parameters
+        ----------
+        text : str
+            The input text to tokenize.
+
+        Returns
+        -------
+        torch.Tensor
+            A tensor of token ids. The token ids maximum values is 32.
+        """
+        # replace spaces/newlines with the vocab word boundary character
+        text = text.upper().replace(" ", "|").replace("\n", "|")
+        token_ids = [self.char_to_id.get(char, self.char_to_id["<unk>"]) for char in text]
+        return torch.tensor(token_ids)
+
+    def decode_ids_to_tokens(self, token_ids: torch.Tensor) -> List[str]:
+        """Convert token IDs back to their corresponding character tokens.
+
+        Parameters
+        ----------
+        token_ids : torch.Tensor
+            A tensor of token IDs.
+
+        Returns
+        -------
+        List[str]
+            A list of character tokens corresponding to the input token IDs.
+        """
+        return [self.id_to_char.get(token_id.item(), "<unk>") for token_id in token_ids]
+
+    def __len__(self):
+        """Get the size of the tokenizer vocabulary.
+
+        Returns
+        -------
+        int
+            The number of tokens in the vocabulary.
+        """
+        return len(self.vocab_dict)
+
+
+def collate_fn(batch):
+    features, subtitles, token_ids = zip(*batch)
+
+    # pad token_ids to max sequence length
+    max_len = max(t.shape[0] for t in token_ids)
+    padded_token_ids = torch.stack([F.pad(t, (0, max_len - t.shape[0])) for t in token_ids])
 
     features = torch.stack(features)
-    return features, list(subtitles), padded_embeddings
+    return features, list(subtitles), padded_token_ids
 
 
 if __name__ == "__main__":
@@ -275,22 +303,29 @@ if __name__ == "__main__":
     plt.ylabel("Mel Frequency Bins")
     plt.show()
 
-    processor = BertProcessor()
+    processor_bert = BertProcessor()
+    processor_wav2vec2 = Wav2Vec2TextProcessor()
 
     with open(os.path.join(Config.get("DATASET_DIR_PATH"), "Django Unchained (2012)", "segment_000003.txt")) as file:
         text = file.read()
 
-    tokens_tensor = processor.tokenize_text(text)
-    token_embeddings = processor.embed_tokens(tokens_tensor)
-
-    # convert token IDs to tokens
-    input_ids = tokens_tensor["input_ids"][0]
-    tokens = processor.tokenizer.convert_ids_to_tokens(input_ids)
+    token_ids_bert = processor_bert.process(text)
+    tokens = processor_bert.tokenizer.convert_ids_to_tokens(token_ids_bert)  # convert token ids to tokens
 
     print(f"Input text: {text}\n")
-    print("Token\t\tEmbedding (first 5 values):")
+    print(f"\tBertProcessor")
+    print(f"Vocab Size: {len(processor_bert)}")
+    print("Token\t\tToken ID:")
     print("=" * 50)
-    for token, embedding in zip(tokens, token_embeddings[0]):
-        # Display first 5 dimensions for readability
-        embedding_preview = embedding[:5].tolist()
-        print(f"{token:<12} {embedding_preview}")
+    for token, token_id in zip(tokens, token_ids_bert):
+        print(f"{token:<12} {token_id}")
+
+    token_ids_wav2vec2 = processor_wav2vec2.process(text)
+    tokens = processor_wav2vec2.decode_ids_to_tokens(token_ids_wav2vec2)
+
+    print(f"\n\tWav2Vec2 Processor")
+    print(f"Vocab Size: {len(processor_wav2vec2)}")
+    print("Token\t\tToken ID:")
+    print("=" * 50)
+    for token, token_id in zip(tokens, token_ids_wav2vec2):
+        print(f"{token:<12} {token_id.item()}")
