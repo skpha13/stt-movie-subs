@@ -71,7 +71,7 @@ As outlined in our [Data Pipeline – Subtitle Text Cleaning](./03_data_pipeline
 - Removed all punctuation except apostrophes
 - Removed non-textual characters (e.g., music notes, symbols)
 
-### Tokenization & Embedding
+### Tokenization
 
 After cleaning the text, we prepared it for use in our machine learning model, which, unlike humans, cannot interpret raw text. Instead, models work with **numerical representations** of words.
 
@@ -81,22 +81,16 @@ To achieve this, we used the `BertProcessor`, which performs:
 
 - **Conversion to IDs**: Maps each token to its corresponding index in the BERT vocabulary
 
-- **Padding/truncation**: Ensures all input sequences are the same length
-
-- **Attention mask generation**: Helps the model distinguish between actual tokens and padding
-
-These token IDs are then passed to a **BERT embedder**, which transforms them into dense vector representations suitable for input into our model.
-
 This pipeline allows us to turn raw text into a structured, numerical format that deep learning models can understand and learn from.
 
 This is how we managed to extract numbers for our strings.
 
-### Example Output
+### Example Output BertProcessor
 
 ```
 Input text: 
 
-"state your business or prepare to get winged
+"""state your business or prepare to get winged
 calm yourselves gentlemen
 i mean you no harm
 i'm simply a fellow weary traveler
@@ -108,84 +102,148 @@ who wants to know
 well i do
 i'm dr
 king schultz
-this is my horse fritz"
+this is my horse fritz
+"""
 
-Output Embeddings: 
-
-Token		Embedding (first value):
+	BertProcessor
+Vocab Size: 30522
+Token		Token ID:
 ==================================================
-[CLS]        [-0.031426798552274704]
-state        [0.5917357802391052]
-your         [0.13955436646938324]
-business     [0.2860156297683716]
-or           [0.9503026008605957]
-prepare      [0.47389867901802063]
-to           [0.3284497857093811]
-get          [-0.05316796153783798]
-winged       [0.7143133878707886]
-calm         [0.19899581372737885]
-yourselves   [0.6593223214149475]
-gentlemen    [0.2816689908504486]
-i            [0.3056299388408661]
-mean         [0.24220655858516693]
-you          [-0.3945435583591461]
-no           [-0.5192216038703918]
-harm         [0.7450321912765503]
-i            [0.2685508728027344]
-'            [0.617261528968811]
-m            [0.09049440175294876]
-simply       [0.6742996573448181]
-a            [-0.12972207367420197]
-fellow       [0.4290388226509094]
-weary        [0.681162416934967]
-traveler     [0.5952596664428711]
-whoa         [0.4856981039047241]
-boy          [0.2714136838912964]
-good         [0.26720595359802246]
-cold         [0.16139085590839386]
-evening      [0.07954594492912292]
-gentlemen    [0.1783004105091095]
-i            [0.21192319691181183]
-'            [0.6087495684623718]
-m            [0.16792258620262146]
-looking      [-0.4277466833591461]
-for          [0.019833602011203766]
-a            [0.32258135080337524]
-pair         [0.9017518758773804]
-of           [0.08765321224927902]
-slave        [1.3553224802017212]
-traders      [0.7670890688896179]
-that         [0.2582424283027649]
-go           [0.6959033012390137]
-by           [1.0501264333724976]
-the          [0.06545021384954453]
-name         [0.19647757709026337]
-of           [-0.09283808618783951]
-the          [0.3300958573818207]
-spec         [0.587810218334198]
-##k          [-0.6790321469306946]
-brothers     [0.7171322107315063]
-might        [0.8205792307853699]
-that         [-0.1958954781293869]
-be           [0.8499196171760559]
-you          [-0.06269575655460358]
-who          [-0.8409755825996399]
-wants        [0.4454444944858551]
-to           [0.5163993835449219]
-know         [0.6243178248405457]
-well         [0.8256926536560059]
-i            [0.21154655516147614]
-do           [0.26602211594581604]
-i            [0.055003732442855835]
-'            [0.6320239901542664]
-m            [0.7231801748275757]
-dr           [0.3433249294757843]
-king         [0.4757535755634308]
-schultz      [-0.026059262454509735]
-this         [-0.19547556340694427]
-is           [0.2445361316204071]
-my           [0.5942360758781433]
-horse        [0.4529430866241455]
-fritz        [-0.25482046604156494]
-[SEP]        [0.5356891751289368]
+[CLS]        101
+state        2110
+your         2115
+business     2449
+or           2030
+prepare      7374
+to           2000
+get          2131
+winged       14462
+calm         5475
+yourselves   25035
+gentlemen    11218
+i            1045
+mean         2812
+you          2017
+no           2053
+harm         7386
+i            1045
+'            1005
+m            1049
+simply       3432
+a            1037
+fellow       3507
+weary        16040
+traveler     20174
+whoa         23281
+boy          2879
+good         2204
+cold         3147
+evening      3944
+gentlemen    11218
+i            1045
+'            1005
+m            1049
+looking      2559
+for          2005
+a            1037
+pair         3940
+of           1997
+slave        6658
+traders      13066
+that         2008
+go           2175
+by           2011
+the          1996
+name         2171
+of           1997
+the          1996
+spec         28699
+##k          2243
+brothers     3428
+might        2453
+that         2008
+be           2022
+you          2017
+who          2040
+wants        4122
+to           2000
+know         2113
+well         2092
+i            1045
+do           2079
+i            1045
+'            1005
+m            1049
+dr           2852
+king         2332
+schultz      22378
+this         2023
+is           2003
+my           2026
+horse        3586
+fritz        12880
+[SEP]        102
+```
+
+### Reducing Output Layer Size with Character-Based Tokenization
+
+When using a typical tokenizer, token IDs can have very high values, often in the tens of thousands. 
+
+This means that the final classification layer in a model (used to predict the next token) must match the full vocabulary size, leading to large and computationally expensive output layers.
+
+To address this, we use **character-level tokenization** with **Wav2Vec2**, which has a much smaller vocabulary of only 32 tokens. 
+
+This includes the 26 letters of the English alphabet and a few special characters such as `<pad>`, `<unk>`, and `|` (representing space or word boundary).
+
+### Example Output Wav2Vec2TextProcessor
+
+```
+    Wav2Vec2 Processor
+Vocab Size: 32
+Token		Token ID:
+==================================================
+S            12
+T            6
+A            7
+T            6
+E            5
+|            4
+Y            22
+O            8
+U            16
+R            13
+|            4
+B            24
+U            16
+S            12
+I            10
+N            9
+E            5
+S            12
+S            12
+|            4
+O            8
+R            13
+|            4
+P            23
+R            13
+E            5
+P            23
+A            7
+R            13
+E            5
+|            4
+T            6
+O            8
+|            4
+G            21
+E            5
+T            6
+|            4
+W            18
+I            10
+N            9
+G            21
+E            5
+D            14
 ```
